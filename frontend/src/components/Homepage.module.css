@@ -1,0 +1,215 @@
+.container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .sidebar {
+    width: 250px;
+    height: 100vh;
+    background: linear-gradient(to bottom, #252666, #077a82);
+    border-radius: 10px;
+    border: 1px solid #d3d3d3;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+  
+  .logoIcon {
+    width: 30px;
+    height: 30px;
+    background-color: #fff;
+    color: #06141a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .logoText {
+    font-size: 20px;
+    font-weight: 500;
+  }
+  
+  .navMenu,
+  .additionalSections {
+    list-style: none;
+  }
+  
+  .navItem {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .navItem svg {
+    margin-right: 10px;
+    font-size: 16px;
+  }
+  
+  .navItem .arrow {
+    margin-left: auto;
+    color: #b0b0b0;
+    font-size: 12px;
+  }
+  
+  .navItem:hover {
+    background-color: #558eaf;
+  }
+  
+  .active {
+    background-color: #558eaf;
+  }
+  
+  .additionalSections {
+    margin-top: 20px;
+  }
+  
+  .userSection {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .userSection:hover {
+    background-color: rgba(85, 142, 175, 0.3);
+  }
+  
+  .userIcon {
+    margin-right: 10px;
+    font-size: 16px;
+  }
+  
+  .userName {
+    font-size: 14px;
+  }
+  
+  .userSection .arrow {
+    margin-left: auto;
+    color: #b0b0b0;
+    font-size: 12px;
+  }
+  
+  .userMenu {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to bottom, #1e2052, #066b72);
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: none;
+  }
+  
+  .userMenuItem {
+    padding: 5px 15px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .userMenuItem:hover {
+    background-color: #558eaf;
+  }
+  
+  .userMenuItem svg {
+    margin-right: 10px;
+    font-size: 10px;
+    color: #fff;
+  }
+  
+  .mainContent {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  
+  .emptyProject {
+    text-align: center;
+  }
+  
+  .projectIllustration {
+    margin-bottom: 20px;
+  }
+  
+  .emptyMessage {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .emptySubmessage {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .newProjectBtn {
+    background-color: #10689b;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .newProjectBtn:hover {
+    background-color: #188fd3;
+  }
+  
+  .deploymentContainer {
+    width: 100%;
+    max-width: 1200px;
+    padding: 30px;
+    margin: 0 auto;
+  }
+  
+  .deploymentHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .deploymentHeader h2 {
+    font-size: 24px;
+    color: #333;
+    margin: 0;
+    font-weight: 600;
+  }
