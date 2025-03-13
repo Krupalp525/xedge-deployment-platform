@@ -100,7 +100,9 @@ const DebugPanel: React.FC = () => {
           opacity: 0.8,
           '&:hover': {
             opacity: 1
-          }
+          },
+          backgroundColor: '#1976d2', 
+          color: '#fff'
         }}
       >
         Debug
@@ -130,6 +132,14 @@ const DebugPanel: React.FC = () => {
           variant="outlined" 
           size="small" 
           onClick={toggleVisibility}
+          sx={{ 
+            borderColor: '#1976d2', 
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1565c0',
+              backgroundColor: 'rgba(25, 118, 210, 0.04)'
+            }
+          }}
         >
           Close
         </Button>
@@ -143,10 +153,58 @@ const DebugPanel: React.FC = () => {
 
       <Typography variant="subtitle2" sx={{ mb: 1 }}>Test Standard Endpoints:</Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-        <Button variant="outlined" size="small" onClick={testHealthEndpoint}>Health</Button>
-        <Button variant="outlined" size="small" onClick={testPluginsEndpoint}>Plugins</Button>
-        <Button variant="outlined" size="small" onClick={testWorkflowsEndpoint}>Workflows</Button>
-        <Button variant="outlined" size="small" onClick={testDeploymentsEndpoint}>Deployments</Button>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={testHealthEndpoint}
+          sx={{ 
+            borderColor: '#1976d2', 
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1565c0',
+              backgroundColor: 'rgba(25, 118, 210, 0.04)'
+            }
+          }}
+        >Health</Button>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={testPluginsEndpoint}
+          sx={{ 
+            borderColor: '#1976d2', 
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1565c0',
+              backgroundColor: 'rgba(25, 118, 210, 0.04)'
+            }
+          }}
+        >Plugins</Button>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={testWorkflowsEndpoint}
+          sx={{ 
+            borderColor: '#1976d2', 
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1565c0',
+              backgroundColor: 'rgba(25, 118, 210, 0.04)'
+            }
+          }}
+        >Workflows</Button>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={testDeploymentsEndpoint}
+          sx={{ 
+            borderColor: '#1976d2', 
+            color: '#1976d2',
+            '&:hover': {
+              borderColor: '#1565c0',
+              backgroundColor: 'rgba(25, 118, 210, 0.04)'
+            }
+          }}
+        >Deployments</Button>
       </Box>
 
       <Box sx={{ mb: 2 }}>
@@ -164,6 +222,7 @@ const DebugPanel: React.FC = () => {
           size="small" 
           onClick={testCustomEndpoint}
           fullWidth
+          sx={{ backgroundColor: '#1976d2', color: '#fff' }}
         >
           Test Custom Endpoint
         </Button>

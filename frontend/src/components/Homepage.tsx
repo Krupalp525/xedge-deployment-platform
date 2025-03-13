@@ -45,29 +45,24 @@ const Homepage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch user info from token
+    // Extract user info from token if available
     const token = localStorage.getItem('token');
+    
     if (token) {
       try {
-        // Check if token has JWT format (contains two dots)
-        if (token.split('.').length === 3) {
-          // Decode token to get user info
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          }).join(''));
-
-          const decoded = JSON.parse(jsonPayload);
-          if (decoded.user && decoded.user.username) {
-            setUserName(decoded.user.username);
-          }
-        } else {
-          // If token doesn't have JWT format, just use default name
-          console.log('Token is not in JWT format, using default user name');
-        }
-      } catch (error) {
-        console.error('Error parsing user token:', error);
+        // Try to decode JWT to get user info
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const { username } = JSON.parse(jsonPayload);
+        setUserName(username || 'User');
+      } catch (e) {
+        // If token is not in JWT format, use a default name
+        // console.log('Token is not in JWT format, using default user name');
+        setUserName('User');
       }
     }
 
@@ -78,8 +73,18 @@ const Homepage: React.FC = () => {
   const fetchDeployments = async () => {
     try {
       setLoading(true);
-      const deployments = await api.deployments.getAll();
-      setDeployments(deployments);
+      const response = await api.deployments.getAll();
+      // Check if the response has the expected structure
+      if (response && response.data && Array.isArray(response.data)) {
+        setDeployments(response.data);
+      } else if (Array.isArray(response)) {
+        // For backward compatibility, handle direct array response
+        setDeployments(response);
+      } else {
+        // Fallback for unexpected response format
+        console.error('Unexpected deployments response format:', response);
+        setDeployments([]);
+      }
     } catch (error: any) {
       console.error('Error fetching deployments:', error);
       // For development purposes only - in production, you might want to show a more user-friendly message
@@ -97,8 +102,13 @@ const Homepage: React.FC = () => {
 
   const handleAddDeployment = async (deployment: Deployment) => {
     try {
-      const newDeployment = await api.deployments.create(deployment);
-      setDeployments([...deployments, newDeployment]);
+      const response = await api.deployments.create(deployment);
+      if (response.success && response.data) {
+        setDeployments([...deployments, response.data]);
+      } else {
+        console.error('Unexpected response format during deployment creation:', response);
+        alert('Failed to add deployment. Unexpected response format.');
+      }
     } catch (error: any) {
       console.error('Error adding deployment:', error);
       alert('Failed to add deployment. Please try again.');
@@ -121,7 +131,12 @@ const Homepage: React.FC = () => {
       });
       
       // Update the deployments state
-      setDeployments(deployments.map(d => d.id === updatedDeployment.id ? response : d));
+      if (response.success && response.data) {
+        setDeployments(deployments.map(d => d.id === updatedDeployment.id ? response.data : d).filter((d): d is Deployment => d !== undefined));
+      } else {
+        console.error('Unexpected response format during deployment update:', response);
+        alert('Failed to update deployment. Unexpected response format.');
+      }
     } catch (error: any) {
       console.error('Error updating deployment:', error);
       alert('Failed to update deployment. Please try again.');
@@ -133,8 +148,13 @@ const Homepage: React.FC = () => {
     
     if (window.confirm('Are you sure you want to delete this deployment?')) {
       try {
-        await api.deployments.delete(id);
-        setDeployments(deployments.filter(deployment => deployment.id !== id));
+        const response = await api.deployments.delete(id);
+        if (response.success) {
+          setDeployments(deployments.filter(deployment => deployment.id !== id));
+        } else {
+          console.error('Unexpected response format during deployment deletion:', response);
+          alert('Failed to delete deployment. Unexpected response format.');
+        }
       } catch (error: any) {
         console.error('Error deleting deployment:', error);
         alert('Failed to delete deployment. Please try again.');

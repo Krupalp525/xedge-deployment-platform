@@ -56,8 +56,33 @@ const SidePanel: React.FC<SidePanelProps> = ({ plugins }) => {
   }, {});
 
   const handleDragStart = (event: React.DragEvent<HTMLDivElement>, pluginId: string) => {
+    // Set multiple MIME types for better cross-browser compatibility
+    console.log('Starting drag for plugin ID:', pluginId);
+    
+    // Set data in multiple formats for browser compatibility
+    event.dataTransfer.setData('pluginId', pluginId);
     event.dataTransfer.setData('application/reactflow', pluginId);
+    event.dataTransfer.setData('text', pluginId);
+    event.dataTransfer.setData('text/plain', pluginId);
+    
+    // For Firefox, create a ghost image that's more visible
+    const ghostElement = document.createElement('div');
+    ghostElement.textContent = 'Plugin';
+    ghostElement.style.backgroundColor = '#3f51b5';
+    ghostElement.style.color = 'white';
+    ghostElement.style.padding = '10px';
+    ghostElement.style.borderRadius = '4px';
+    ghostElement.style.position = 'absolute';
+    ghostElement.style.top = '-1000px';
+    document.body.appendChild(ghostElement);
+    
+    event.dataTransfer.setDragImage(ghostElement, 0, 0);
     event.dataTransfer.effectAllowed = 'move';
+    
+    // Clean up the ghost element after the drag operation
+    setTimeout(() => {
+      document.body.removeChild(ghostElement);
+    }, 0);
   };
 
   return (
@@ -104,7 +129,9 @@ const SidePanel: React.FC<SidePanelProps> = ({ plugins }) => {
                     <Paper
                       elevation={2}
                       onDragStart={(event) => handleDragStart(event, plugin.id)}
-                      draggable
+                      draggable="true"
+                      role="button"
+                      aria-label={`Drag ${plugin.name} plugin`}
                       sx={{
                         width: 60,
                         height: 60,
@@ -113,11 +140,14 @@ const SidePanel: React.FC<SidePanelProps> = ({ plugins }) => {
                         justifyContent: 'center',
                         alignItems: 'center',
                         p: 0.5,
-                        cursor: 'move',
+                        cursor: 'grab',
                         '&:hover': {
                           bgcolor: 'primary.light',
                           color: 'white',
                           boxShadow: 3,
+                        },
+                        '&:active': {
+                          cursor: 'grabbing',
                         },
                         textAlign: 'center',
                       }}

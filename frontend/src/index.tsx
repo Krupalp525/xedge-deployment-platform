@@ -12,14 +12,38 @@ declare global {
   }
 }
 
-// Enable mock API for development with more prominent logging
+// Initialize mock API in development mode
 if (process.env.NODE_ENV === 'development') {
-  // The import itself enables the mock API
-  console.log('Mock API enabled in development mode');
-  console.log('All API requests will be intercepted by mock API');
-  // Force axios to use the mock adapter by importing it first
-  window.USE_MOCK_API = true;
+  // Comment out or remove console logs
+  // console.log('Mock API enabled in development mode');
+  // console.log('All API requests will be intercepted by mock API');
+  
+  // No need to import mockApi again as it's already imported at the top
 }
+
+// Suppress ResizeObserver errors
+const originalError = window.console.error;
+window.console.error = (...args) => {
+  if (
+    args[0]?.includes?.('ResizeObserver loop') || 
+    args[0]?.includes?.('ResizeObserver loop completed with undelivered notifications') ||
+    args[0]?.toString().includes?.('ResizeObserver')
+  ) {
+    // Suppress all ResizeObserver errors
+    return;
+  }
+  originalError.apply(window.console, args);
+};
+
+// Add global error handler to prevent ResizeObserver errors from crashing the app
+window.addEventListener('error', (event) => {
+  if (event.message && event.message.includes('ResizeObserver')) {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    return false;
+  }
+  return true;
+});
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

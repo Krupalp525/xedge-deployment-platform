@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactFlow, {
   ReactFlowProvider,
@@ -10,6 +10,12 @@ import ReactFlow, {
   Connection,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  NodeTypes,
+  useOnViewportChange,
+  ReactFlowInstance,
+  NodeChange,
+  EdgeChange,
 } from 'reactflow';
 import { Grid, Paper, Button, Box, Typography, IconButton } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,6 +24,8 @@ import axios from 'axios';
 import 'reactflow/dist/style.css';
 import SidePanel from './SidePanel';
 import ConfigPanel from './ConfigPanel';
+import CustomNode from './CustomNode';
+import { debounce } from 'lodash';
 
 interface Plugin {
   id: string;
@@ -190,43 +198,6 @@ const WorkflowCanvas: React.FC = () => {
     }
   };
 
-  // Handle dragging plugins onto the canvas
-  const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  };
-
-  const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const pluginId = event.dataTransfer.getData('application/reactflow');
-    
-    if (!pluginId) return;
-    
-    // Find the plugin to get its details
-    const plugin = plugins.find(p => p.id === pluginId);
-    
-    if (!plugin) return;
-    
-    const reactFlowBounds = event.currentTarget.getBoundingClientRect();
-    const position = {
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    };
-    
-    const newNode: Node = {
-      id: `node_${Date.now()}`,
-      type: 'default',
-      position,
-      data: { 
-        label: plugin.name,
-        pluginId: plugin.id, 
-        config: {} 
-      },
-    };
-    
-    setNodes((nds) => nds.concat(newNode));
-  };
-
   // Save the workflow
   const handleSave = async () => {
     try {
@@ -271,7 +242,12 @@ const WorkflowCanvas: React.FC = () => {
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
-        <Button variant="contained" onClick={handleBack} startIcon={<FontAwesomeIcon icon={faArrowLeft} />}>
+        <Button 
+          variant="contained" 
+          onClick={handleBack} 
+          startIcon={<FontAwesomeIcon icon={faArrowLeft} />}
+          sx={{ backgroundColor: '#1976d2', color: '#fff' }}
+        >
           Back to Deployments
         </Button>
         <Paper sx={{ mt: 2, p: 3, bgcolor: '#ffebee' }}>
@@ -297,6 +273,7 @@ const WorkflowCanvas: React.FC = () => {
           variant="contained" 
           onClick={handleSave} 
           startIcon={<FontAwesomeIcon icon={faSave} />}
+          sx={{ backgroundColor: '#1976d2', color: '#fff' }}
         >
           Save Workflow
         </Button>
@@ -313,7 +290,7 @@ const WorkflowCanvas: React.FC = () => {
           <Paper elevation={3} sx={{ height: '100%' }}>
             <ReactFlowProvider>
               <div style={{ width: '100%', height: '100%' }}>
-                <ReactFlow
+                <FlowWithDropSupport
                   nodes={nodes}
                   edges={edges}
                   onNodesChange={onNodesChange}
@@ -322,12 +299,9 @@ const WorkflowCanvas: React.FC = () => {
                   onNodeClick={onNodeClick}
                   onEdgeClick={onEdgeClick}
                   onPaneClick={onPaneClick}
-                  onDragOver={onDragOver}
-                  onDrop={onDrop}
-                  fitView
-                >
-                  <Controls />
-                </ReactFlow>
+                  plugins={plugins}
+                  setNodes={setNodes}
+                />
               </div>
             </ReactFlowProvider>
           </Paper>
@@ -345,6 +319,185 @@ const WorkflowCanvas: React.FC = () => {
         )}
       </Grid>
     </Box>
+  );
+};
+
+// Define props interface for FlowWithDropSupport
+interface FlowWithDropSupportProps {
+  nodes: Node[];
+  edges: Edge[];
+  onNodesChange: (changes: NodeChange[]) => void;
+  onEdgesChange: (changes: EdgeChange[]) => void;
+  onConnect: (connection: Connection) => void;
+  onNodeClick: (event: React.MouseEvent, node: Node) => void;
+  onEdgeClick: () => void;
+  onPaneClick: () => void;
+  plugins: Plugin[];
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+}
+
+// This component has access to useReactFlow for coordinate transformation
+const FlowWithDropSupport: React.FC<FlowWithDropSupportProps> = ({ 
+  nodes, 
+  edges, 
+  onNodesChange, 
+  onEdgesChange, 
+  onConnect, 
+  onNodeClick, 
+  onEdgeClick, 
+  onPaneClick,
+  plugins,
+  setNodes
+}) => {
+  const reactFlow = useReactFlow();
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Define node types with our custom node
+  const nodeTypes = useMemo(() => ({ default: CustomNode }), []);
+  
+  // Debounce node changes to prevent too many updates
+  const debouncedNodesChange = useCallback(
+    debounce((changes: NodeChange[]) => {
+      onNodesChange(changes);
+    }, 10),
+    [onNodesChange]
+  );
+  
+  // Debounce edge changes to prevent too many updates
+  const debouncedEdgesChange = useCallback(
+    debounce((changes: EdgeChange[]) => {
+      onEdgesChange(changes);
+    }, 10),
+    [onEdgesChange]
+  );
+  
+  // Memoize the reactflow instance to avoid unnecessary re-renders
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    console.log('ReactFlow initialized');
+    setRfInstance(instance);
+    setIsInitialized(true);
+  }, []);
+  
+  // Stop propagation of wheel events to prevent zooming while scrolling
+  const onWheel = useCallback((event: React.WheelEvent) => {
+    if (event.ctrlKey) {
+      event.preventDefault();
+    }
+  }, []);
+  
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    console.log('Drag over detected');
+  }, []);
+
+  const onDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    console.log('Drop event detected');
+    console.log('Available data types:', event.dataTransfer.types);
+    
+    // Try to get plugin ID from different MIME types
+    let pluginId = event.dataTransfer.getData('pluginId');
+    
+    if (!pluginId) {
+      pluginId = event.dataTransfer.getData('application/reactflow');
+      console.log('Trying alternative MIME type: application/reactflow');
+    }
+    
+    if (!pluginId) {
+      pluginId = event.dataTransfer.getData('text');
+      console.log('Trying text MIME type');
+    }
+    
+    if (!pluginId) {
+      pluginId = event.dataTransfer.getData('text/plain');
+      console.log('Trying text/plain MIME type');
+    }
+    
+    console.log('Plugin ID from drop:', pluginId);
+    
+    if (!pluginId || !isInitialized) {
+      console.log('No valid plugin ID or React Flow not initialized');
+      return;
+    }
+    
+    // Find the plugin to get its details
+    const plugin = plugins.find(p => p.id === pluginId);
+    
+    if (!plugin) {
+      console.log('Plugin not found with ID:', pluginId);
+      return;
+    }
+    
+    console.log('Found plugin:', plugin.name);
+    
+    // Calculate the drop position using ReactFlow's coordinate system
+    const position = reactFlow.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    
+    const newNode = {
+      id: `${pluginId}-${Date.now()}`,
+      type: 'default',
+      position,
+      data: { 
+        label: plugin.name,
+        pluginId: plugin.id, 
+        config: {} 
+      },
+    };
+    
+    console.log('Creating new node:', newNode);
+    setNodes((nds) => nds.concat(newNode));
+  }, [plugins, reactFlow, setNodes, isInitialized]);
+  
+  return (
+    <div 
+      ref={reactFlowWrapper} 
+      style={{ 
+        width: '100%',
+        height: '100%',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onWheel={onWheel}
+    >
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={debouncedNodesChange}
+        onEdgesChange={debouncedEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
+        onPaneClick={onPaneClick}
+        onInit={onInit}
+        nodeTypes={nodeTypes}
+        fitView
+        style={{ width: '100%', height: '100%' }}
+        minZoom={0.2}
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        nodesDraggable={true}
+        elementsSelectable={true}
+        zoomOnScroll={false}
+        zoomOnPinch={true}
+        panOnScroll={true}
+        panOnDrag={true}
+        preventScrolling={true}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Controls showInteractive={false} />
+        <Background gap={16} size={1} />
+      </ReactFlow>
+    </div>
   );
 };
 

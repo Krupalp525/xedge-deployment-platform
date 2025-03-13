@@ -58,4 +58,11 @@ export interface User {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+// API Response type
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
 } 

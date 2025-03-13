@@ -1,6 +1,11 @@
-import { Plugin, Workflow, Deployment } from './types';
+import { Plugin, Workflow, Deployment, ApiResponse, AuthResponse } from './types';
 import axios from 'axios';
 import './mockApi'; // This ensures mockApi is loaded and intercepting axios requests
+
+// Import mock data
+import { mockPlugins } from './mock-data/plugins';
+import { mockDeployments } from './mock-data/deployments';
+import { mockWorkflows } from './mock-data/workflows';
 
 // Define API base URL
 const API_URL = 'http://localhost:5000/api';
@@ -136,176 +141,6 @@ const callRealApi = async (method: string, endpoint: string, data?: any) => {
   }
 };
 
-// Sample plugins data
-const plugins: Plugin[] = [
-  {
-    id: "plugin-input-file",
-    name: "File Input",
-    category: "Input",
-    description: "Read data from a file",
-    type: "source",
-    settings: {
-      basic: [
-        { key: "filePath", type: "string", label: "File Path" }
-      ]
-    }
-  },
-  {
-    id: "plugin-input-api",
-    name: "API Input",
-    category: "Input",
-    description: "Fetch data from an API",
-    type: "source",
-    settings: {
-      basic: [
-        { key: "apiUrl", type: "string", label: "API URL" },
-        { key: "interval", type: "number", label: "Polling Interval (ms)" }
-      ]
-    }
-  },
-  {
-    id: "plugin-filter-basic",
-    name: "Basic Filter",
-    category: "Processing",
-    description: "Filter data based on conditions",
-    type: "filter",
-    settings: {
-      basic: [
-        { key: "condition", type: "string", label: "Filter Condition" }
-      ]
-    }
-  },
-  {
-    id: "plugin-transform-json",
-    name: "JSON Transform",
-    category: "Processing",
-    description: "Transform data format",
-    type: "transform",
-    settings: {
-      basic: [
-        { key: "template", type: "text", label: "JSON Template" }
-      ]
-    }
-  },
-  {
-    id: "plugin-process-ai",
-    name: "AI Processor",
-    category: "Advanced",
-    description: "Process data using AI models",
-    type: "process",
-    settings: {
-      basic: [
-        { key: "modelId", type: "string", label: "Model ID" },
-        { key: "batchSize", type: "number", label: "Batch Size" }
-      ]
-    }
-  },
-  {
-    id: "plugin-output-database",
-    name: "Database Output",
-    category: "Output",
-    description: "Store data in a database",
-    type: "sink",
-    settings: {
-      basic: [
-        { key: "connectionString", type: "string", label: "Connection String" },
-        { key: "tableName", type: "string", label: "Table Name" }
-      ]
-    }
-  },
-  {
-    id: "plugin-output-file",
-    name: "File Output",
-    category: "Output",
-    description: "Write data to a file",
-    type: "sink",
-    settings: {
-      basic: [
-        { key: "outputPath", type: "string", label: "Output File Path" }
-      ]
-    }
-  }
-];
-
-// Sample initial deployments data
-const initialDeployments: Deployment[] = [
-  { 
-    id: 1, 
-    name: 'Production Deployment', 
-    host: 'localhost', 
-    port: '8001', 
-    user_id: 1, 
-    created_at: '2023-05-01T10:00:00Z', 
-    updated_at: '2023-05-01T10:00:00Z', 
-    owner_username: 'admin' 
-  },
-  { 
-    id: 2, 
-    name: 'Test Deployment', 
-    host: 'localhost', 
-    port: '8002', 
-    user_id: 1, 
-    created_at: '2023-05-02T11:30:00Z', 
-    updated_at: '2023-05-02T11:30:00Z', 
-    owner_username: 'admin' 
-  },
-  { 
-    id: 3, 
-    name: 'Development Deployment', 
-    host: 'localhost', 
-    port: '8003', 
-    user_id: 1, 
-    created_at: '2023-05-03T09:15:00Z', 
-    updated_at: '2023-05-03T09:15:00Z', 
-    owner_username: 'admin' 
-  }
-];
-
-// Sample initial workflows for each deployment
-const initialWorkflows: Record<string, Workflow> = {
-  '1': {
-    elements: [
-      {
-        id: 'node_1',
-        type: 'default',
-        position: { x: 100, y: 100 },
-        data: { label: 'File Input', pluginId: 'plugin-input-file', config: { filePath: '/data/input.csv' } }
-      },
-      {
-        id: 'node_2',
-        type: 'default',
-        position: { x: 400, y: 100 },
-        data: { label: 'Basic Filter', pluginId: 'plugin-filter-basic', config: { condition: 'value > 10' } }
-      },
-      {
-        id: 'node_3',
-        type: 'default',
-        position: { x: 700, y: 100 },
-        data: { label: 'Database Output', pluginId: 'plugin-output-database', config: { connectionString: 'mysql://user:pass@localhost/db', tableName: 'processed_data' } }
-      }
-    ]
-  },
-  '2': {
-    elements: [
-      {
-        id: 'node_1',
-        type: 'default',
-        position: { x: 100, y: 100 },
-        data: { label: 'API Input', pluginId: 'plugin-input-api', config: { apiUrl: 'https://api.example.com/data', interval: 5000 } }
-      },
-      {
-        id: 'node_2',
-        type: 'default',
-        position: { x: 400, y: 100 },
-        data: { label: 'JSON Transform', pluginId: 'plugin-transform-json', config: { template: '{"result": ${value}}' } }
-      }
-    ]
-  },
-  '3': {
-    elements: []
-  }
-};
-
 // Helper function to get deployments from localStorage or use the initial deployments
 function getStoredDeployments(): Deployment[] {
   try {
@@ -318,8 +153,8 @@ function getStoredDeployments(): Deployment[] {
   }
   
   // If nothing in localStorage, save the initial deployments and return them
-  localStorage.setItem('mockDeployments', JSON.stringify(initialDeployments));
-  return initialDeployments;
+  localStorage.setItem('mockDeployments', JSON.stringify(mockDeployments));
+  return mockDeployments;
 }
 
 // Helper function to get workflows from localStorage or use the initial workflows
@@ -334,8 +169,8 @@ function getStoredWorkflows(): Record<string, Workflow> {
   }
   
   // If nothing in localStorage, save the initial workflows and return them
-  localStorage.setItem('mockWorkflows', JSON.stringify(initialWorkflows));
-  return initialWorkflows;
+  localStorage.setItem('mockWorkflows', JSON.stringify(mockWorkflows));
+  return mockWorkflows;
 }
 
 // Initialize our data from localStorage or defaults
@@ -354,7 +189,7 @@ function saveWorkflows() {
 
 // Create the API service for auth
 export const authApi = {
-  login: async (username: string, password: string) => {
+  login: async (username: string, password: string): Promise<AuthResponse> => {
     if (shouldUseRealApi()) {
       try {
         return await callRealApi('post', '/auth/login', { username, password });
@@ -367,7 +202,7 @@ export const authApi = {
     }
     
     // Mock implementation
-    console.log('Mock login', username, password);
+    // console.log('Mock login', username, password);
     
     return {
       token: 'mock-jwt-token',
@@ -381,7 +216,7 @@ export const authApi = {
     }
     
     // Mock implementation
-    console.log('Mock register', username, password, email);
+    // console.log('Mock register', username, password, email);
     
     return {
       token: 'mock-jwt-token',
@@ -393,87 +228,167 @@ export const authApi = {
 // Create the API service for deployments
 export const deploymentsApi = {
   // Get all deployments
-  getAll: async () => {
+  getAll: async (): Promise<ApiResponse<Deployment[]>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('get', '/deployments');
     }
     
     // Mock implementation
-    console.log('Mock getAll deployments');
-    try {
-      const response = await axios.get('/api/deployments');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching deployments:', error);
-      return [];
-    }
+    // console.log('Mock getAll deployments');
+    
+    return {
+      success: true,
+      data: getStoredDeployments()
+    };
   },
   
   // Get a deployment by ID
-  getById: async (id: number) => {
+  getById: async (id: number): Promise<ApiResponse<Deployment>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('get', `/deployments/${id}`);
     }
     
     // Mock implementation
-    console.log('Mock getById deployment', id);
-    try {
-      const response = await axios.get(`/api/deployments/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching deployment ${id}:`, error);
-      throw new Error('Deployment not found');
+    // console.log('Mock getById deployment', id);
+    
+    const deployment = getStoredDeployments().find(d => d.id === id);
+    
+    if (!deployment) {
+      return { 
+        success: false, 
+        error: `Deployment with ID ${id} not found`
+      };
     }
+    
+    return {
+      success: true,
+      data: deployment
+    };
   },
   
   // Create a new deployment
-  create: async (deployment: Partial<Deployment>) => {
+  create: async (deployment: Omit<Deployment, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'owner_username'>): Promise<ApiResponse<Deployment>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('post', '/deployments', deployment);
     }
     
     // Mock implementation
-    console.log('Mock create deployment', deployment);
+    // console.log('Mock create deployment', deployment);
+    
     try {
-      const response = await axios.post('/api/deployments', deployment);
-      return response.data;
+      const deployments = getStoredDeployments();
+      const newId = Math.max(...deployments.map(d => d.id), 0) + 1;
+      const now = new Date().toISOString();
+      
+      const newDeployment: Deployment = {
+        id: newId,
+        name: deployment.name,
+        host: deployment.host,
+        port: deployment.port,
+        user_id: 1, // Mock user ID
+        created_at: now,
+        updated_at: now,
+        owner_username: 'admin' // Mock username
+      };
+      
+      // Add to local storage
+      deployments.push(newDeployment);
+      saveDeployments();
+      
+      // Create an empty workflow for this deployment
+      const workflowsMap = getStoredWorkflows();
+      workflowsMap[newId.toString()] = { elements: [] };
+      saveWorkflows();
+      
+      return {
+        success: true,
+        data: newDeployment
+      };
     } catch (error) {
-      console.error('Error creating deployment:', error);
-      throw new Error('Failed to create deployment');
+      return {
+        success: false,
+        error: 'Failed to create deployment'
+      };
     }
   },
   
   // Update a deployment
-  update: async (id: number, deployment: Partial<Deployment>) => {
+  update: async (id: number, deployment: Partial<Deployment>): Promise<ApiResponse<Deployment>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('put', `/deployments/${id}`, deployment);
     }
     
     // Mock implementation
-    console.log('Mock update deployment', id, deployment);
+    // console.log('Mock update deployment', id, deployment);
+    
     try {
-      const response = await axios.put(`/api/deployments/${id}`, deployment);
-      return response.data;
+      const deployments = getStoredDeployments();
+      const index = deployments.findIndex(d => d.id === id);
+      
+      if (index === -1) {
+        return {
+          success: false,
+          error: `Deployment with ID ${id} not found`
+        };
+      }
+      
+      deployments[index] = {
+        ...deployments[index],
+        ...deployment,
+        updated_at: new Date().toISOString()
+      };
+      
+      saveDeployments();
+      
+      return {
+        success: true,
+        data: deployments[index]
+      };
     } catch (error) {
-      console.error(`Error updating deployment ${id}:`, error);
-      throw new Error('Deployment not found');
+      return {
+        success: false,
+        error: 'Failed to update deployment'
+      };
     }
   },
   
   // Delete a deployment
-  delete: async (id: number) => {
+  delete: async (id: number): Promise<ApiResponse<{ id: number }>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('delete', `/deployments/${id}`);
     }
     
     // Mock implementation
-    console.log('Mock delete deployment', id);
+    // console.log('Mock delete deployment', id);
+    
     try {
-      await axios.delete(`/api/deployments/${id}`);
-      return { success: true };
+      const deployments = getStoredDeployments();
+      const index = deployments.findIndex(d => d.id === id);
+      
+      if (index === -1) {
+        return {
+          success: false,
+          error: `Deployment with ID ${id} not found`
+        };
+      }
+      
+      deployments.splice(index, 1);
+      saveDeployments();
+      
+      // Also delete the associated workflow
+      const workflowsMap = getStoredWorkflows();
+      delete workflowsMap[id.toString()];
+      saveWorkflows();
+      
+      return {
+        success: true,
+        data: { id }
+      };
     } catch (error) {
-      console.error(`Error deleting deployment ${id}:`, error);
-      throw new Error('Deployment not found');
+      return {
+        success: false,
+        error: 'Failed to delete deployment'
+      };
     }
   }
 };
@@ -481,56 +396,71 @@ export const deploymentsApi = {
 // Create the API service for plugins
 export const pluginsApi = {
   // Get all plugins
-  getAll: async () => {
+  getAll: async (): Promise<ApiResponse<Plugin[]>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('get', '/plugins');
     }
     
     // Mock implementation
-    console.log('Mock getAll plugins');
-    try {
-      const response = await axios.get('/api/plugins');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching plugins:', error);
-      return [];
-    }
+    // console.log('Mock getAll plugins');
+    
+    return {
+      success: true,
+      data: mockPlugins
+    };
   }
 };
 
 // Create the API service for workflows
 export const workflowsApi = {
   // Get a workflow by deployment ID
-  getByDeploymentId: async (deploymentId: number) => {
+  getByDeploymentId: async (deploymentId: number): Promise<ApiResponse<Workflow>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('get', `/deployments/${deploymentId}/workflow`);
     }
     
     // Mock implementation
-    console.log('Mock getByDeploymentId workflow', deploymentId);
-    try {
-      const response = await axios.get(`/api/deployments/${deploymentId}/workflow`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching workflow for deployment ${deploymentId}:`, error);
-      return { elements: [] };
+    // console.log('Mock getByDeploymentId workflow', deploymentId);
+    
+    const workflowsMap = getStoredWorkflows();
+    const workflowId = deploymentId.toString();
+    
+    if (!workflowsMap[workflowId]) {
+      workflowsMap[workflowId] = { elements: [] };
+      saveWorkflows();
     }
+    
+    return {
+      success: true,
+      data: workflowsMap[workflowId]
+    };
   },
   
   // Update a workflow
-  update: async (deploymentId: number, workflow: Workflow) => {
+  update: async (deploymentId: number, workflow: Workflow): Promise<ApiResponse<Workflow>> => {
     if (shouldUseRealApi()) {
       return await callRealApi('put', `/deployments/${deploymentId}/workflow`, workflow);
     }
     
     // Mock implementation
-    console.log('Mock update workflow', deploymentId, workflow);
+    // console.log('Mock update workflow', deploymentId, workflow);
+    
     try {
-      const response = await axios.put(`/api/deployments/${deploymentId}/workflow`, workflow);
-      return response.data;
+      const workflowsMap = getStoredWorkflows();
+      const workflowId = deploymentId.toString();
+      
+      workflowsMap[workflowId] = workflow;
+      saveWorkflows();
+      
+      return {
+        success: true,
+        data: workflow
+      };
     } catch (error) {
-      console.error(`Error updating workflow for deployment ${deploymentId}:`, error);
-      throw new Error('Failed to update workflow');
+      return {
+        success: false,
+        error: 'Failed to update workflow'
+      };
     }
   }
 };

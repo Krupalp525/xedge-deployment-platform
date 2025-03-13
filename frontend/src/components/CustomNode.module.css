@@ -1,0 +1,39 @@
+.customNode {
+  width: 180px;
+  height: auto;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: visible;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+  transform: translateZ(0);
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.mounted {
+  opacity: 1;
+}
+
+.handle {
+  width: 8px;
+  height: 8px;
+  background: #555;
+  border-radius: 50%;
+  pointer-events: all !important;
+  opacity: 1 !important;
+}
+
+.nodeContent {
+  font-size: 14px;
+  word-break: break-word;
+  padding: 5px 0;
+  pointer-events: none;
+  user-select: none;
+} 
