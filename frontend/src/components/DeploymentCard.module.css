@@ -130,6 +130,32 @@
   transform: scale(1.1);
 }
 
+.workflowButton {
+  color: #673AB7;
+  position: relative;
+}
+
+.workflowButton:hover {
+  background-color: rgba(103, 58, 183, 0.1);
+  transform: scale(1.1);
+}
+
+.workflowButton::after {
+  content: 'Workflow';
+  position: absolute;
+  font-size: 10px;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.workflowButton:hover::after {
+  opacity: 1;
+}
+
 .deleteButton {
   background: none;
   border: none;

@@ -13,12 +13,14 @@ import {
   faPencilAlt,
   faSignOutAlt,
   faUser,
+  faProjectDiagram
 } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios';
+import api from '../api';
 import styles from './Homepage.module.css';
 import cardStyles from './DeploymentCard.module.css';
 import AddDeploymentModal from './AddDeploymentModal';
 import EditDeploymentModal from './EditDeploymentModal';
+import ApiModeToggle from './ApiModeToggle';
 import { useNavigate } from 'react-router-dom';
 
 interface Deployment {
@@ -26,6 +28,10 @@ interface Deployment {
   name: string;
   host: string;
   port: string;
+  user_id?: number;
+  created_at?: string;
+  updated_at?: string;
+  owner_username?: string;
 }
 
 const Homepage: React.FC = () => {
@@ -43,16 +49,22 @@ const Homepage: React.FC = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        // Decode token to get user info
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        // Check if token has JWT format (contains two dots)
+        if (token.split('.').length === 3) {
+          // Decode token to get user info
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
 
-        const decoded = JSON.parse(jsonPayload);
-        if (decoded.user && decoded.user.username) {
-          setUserName(decoded.user.username);
+          const decoded = JSON.parse(jsonPayload);
+          if (decoded.user && decoded.user.username) {
+            setUserName(decoded.user.username);
+          }
+        } else {
+          // If token doesn't have JWT format, just use default name
+          console.log('Token is not in JWT format, using default user name');
         }
       } catch (error) {
         console.error('Error parsing user token:', error);
@@ -66,15 +78,18 @@ const Homepage: React.FC = () => {
   const fetchDeployments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/deployments', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-auth-token': localStorage.getItem('token')
-        }
-      });
-      setDeployments(response.data);
-    } catch (error) {
+      const deployments = await api.deployments.getAll();
+      setDeployments(deployments);
+    } catch (error: any) {
       console.error('Error fetching deployments:', error);
+      // For development purposes only - in production, you might want to show a more user-friendly message
+      const errorMessage = error.message || 'Error fetching deployments';
+      
+      // Use a more subtle notification instead of an alert in production
+      alert(`Failed to load deployments. ${errorMessage}`);
+      
+      // Display an empty array to prevent showing stale data
+      setDeployments([]);
     } finally {
       setLoading(false);
     }
@@ -82,15 +97,9 @@ const Homepage: React.FC = () => {
 
   const handleAddDeployment = async (deployment: Deployment) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/deployments', deployment, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-auth-token': localStorage.getItem('token'),
-          'Content-Type': 'application/json'
-        }
-      });
-      setDeployments([...deployments, response.data]);
-    } catch (error) {
+      const newDeployment = await api.deployments.create(deployment);
+      setDeployments([...deployments, newDeployment]);
+    } catch (error: any) {
       console.error('Error adding deployment:', error);
       alert('Failed to add deployment. Please try again.');
     }
@@ -103,24 +112,17 @@ const Homepage: React.FC = () => {
 
   const handleUpdateDeployment = async (updatedDeployment: Deployment) => {
     try {
-      const response = await axios.put(`http://localhost:5000/api/deployments/${updatedDeployment.id}`, 
-        {
-          name: updatedDeployment.name,
-          host: updatedDeployment.host,
-          port: updatedDeployment.port
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'x-auth-token': localStorage.getItem('token'),
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      if (!updatedDeployment.id) return;
+      
+      const response = await api.deployments.update(updatedDeployment.id, {
+        name: updatedDeployment.name,
+        host: updatedDeployment.host,
+        port: updatedDeployment.port
+      });
       
       // Update the deployments state
-      setDeployments(deployments.map(d => d.id === updatedDeployment.id ? response.data : d));
-    } catch (error) {
+      setDeployments(deployments.map(d => d.id === updatedDeployment.id ? response : d));
+    } catch (error: any) {
       console.error('Error updating deployment:', error);
       alert('Failed to update deployment. Please try again.');
     }
@@ -131,14 +133,9 @@ const Homepage: React.FC = () => {
     
     if (window.confirm('Are you sure you want to delete this deployment?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/deployments/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'x-auth-token': localStorage.getItem('token')
-          }
-        });
+        await api.deployments.delete(id);
         setDeployments(deployments.filter(deployment => deployment.id !== id));
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error deleting deployment:', error);
         alert('Failed to delete deployment. Please try again.');
       }
@@ -187,6 +184,14 @@ const Homepage: React.FC = () => {
             <span>Test</span>
           </li>
         </ul>
+
+        {/* Developer Mode Toggle (only in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className={styles.devModeSection}>
+            <div className={styles.devModeTitle}>Developer Mode</div>
+            <ApiModeToggle />
+          </div>
+        )}
 
         {/* Additional Sections */}
         <ul className={styles.additionalSections}>
@@ -273,6 +278,13 @@ const Homepage: React.FC = () => {
                       title="Edit deployment"
                     >
                       <FontAwesomeIcon icon={faPencilAlt} />
+                    </button>
+                    <button 
+                      className={`${cardStyles.actionButton} ${cardStyles.workflowButton}`}
+                      onClick={() => navigate(`/deployments/${deployment.id}/workflow`)}
+                      title="Workflow Canvas"
+                    >
+                      <FontAwesomeIcon icon={faProjectDiagram} />
                     </button>
                     <button 
                       className={cardStyles.deleteButton}

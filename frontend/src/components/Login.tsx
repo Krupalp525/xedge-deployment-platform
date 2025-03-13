@@ -17,9 +17,7 @@ import {
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:5000/api';
+import api from '../api';
 
 // Component for the copyright text
 function Copyright(props: any) {
@@ -41,33 +39,29 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError('');
     
-    // Validate form
-    if (!username || !password) {
-      setError('Username and password are required');
-      setOpenSnackbar(true);
-      return;
-    }
-
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        username,
-        password
-      });
-
-      // Store token in localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      const response = await api.auth.login(username, password);
       
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Store token in localStorage
+      if (response && response.token) {
+        localStorage.setItem('token', response.token);
+        navigate('/deployments');
+      } else {
+        setError('Invalid response from server');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
-      setOpenSnackbar(true);
+      console.error('Login error:', err);
+      setError(err.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -133,6 +127,7 @@ const Login: React.FC = () => {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={isLoading}
           >
             Sign In
           </Button>

@@ -213,3 +213,21 @@
     margin: 0;
     font-weight: 600;
   }
+  
+  /* Developer Mode Section */
+  .devModeSection {
+    margin: 20px 0;
+    padding: 15px 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .devModeTitle {
+    color: #ffffff;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    opacity: 0.7;
+    padding-left: 5px;
+  }
