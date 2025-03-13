@@ -41,7 +41,7 @@ A modern web application for managing edge deployments with a user-friendly inte
 - Express
 - PostgreSQL
 - JSON Web Tokens (JWT)
-- bcrypt
+- Node.js Crypto (for password hashing)
 
 ## Setup and Installation
 
@@ -49,7 +49,20 @@ A modern web application for managing edge deployments with a user-friendly inte
 - Node.js (v14+)
 - PostgreSQL
 
-### Backend Setup
+### Quick Start
+1. Install all dependencies from the root directory:
+   ```
+   npm run install:all
+   ```
+2. Set up your database configuration in `backend/.env`
+3. Start both frontend and backend:
+   ```
+   npm start
+   ```
+
+### Manual Setup
+
+#### Backend Setup
 1. Navigate to the backend directory:
    ```
    cd backend
@@ -60,20 +73,18 @@ A modern web application for managing edge deployments with a user-friendly inte
    ```
 3. Create a `.env` file with the following variables:
    ```
-   PORT=5000
-   JWT_SECRET=your_secret_key
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=your_password
-   POSTGRES_DB=xedge
+   POSTGRES_USER=your_db_username
+   POSTGRES_PASSWORD=your_db_password
    POSTGRES_HOST=localhost
    POSTGRES_PORT=5432
+   POSTGRES_DB=xedge
    ```
 4. Start the development server:
    ```
-   npm run dev
+   npm start
    ```
 
-### Frontend Setup
+#### Frontend Setup
 1. Navigate to the frontend directory:
    ```
    cd frontend

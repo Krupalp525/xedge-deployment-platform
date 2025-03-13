@@ -1,5 +1,7 @@
 import pool from '../db';
-import bcrypt from 'bcrypt';
+// Temporarily removing bcrypt dependency
+// import bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 export interface User {
   id: number;
@@ -49,12 +51,16 @@ export class UserModel {
     }
   }
 
+  // Simple hash function to replace bcrypt temporarily
+  static hashPassword(password: string): string {
+    return crypto.createHash('sha256').update(password).digest('hex');
+  }
+
   // Create a new user
   static async create(userData: UserInput): Promise<User> {
     try {
-      // Hash the password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.password, salt);
+      // Hash the password using simple hash (temporary)
+      const hashedPassword = this.hashPassword(userData.password);
 
       const result = await pool.query(
         'INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING *',
@@ -69,6 +75,7 @@ export class UserModel {
 
   // Verify password
   static async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(plainPassword, hashedPassword);
+    // Simple comparison (temporary)
+    return this.hashPassword(plainPassword) === hashedPassword;
   }
 } 
