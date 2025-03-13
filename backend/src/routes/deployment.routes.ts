@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import { DeploymentModel } from '../models/deployment.model';
+import { WorkflowModel } from '../models/workflow.model';
 import pool from '../db';
 
 const router = Router();
@@ -151,6 +152,95 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) =>
     res.json({ message: 'Deployment deleted successfully' });
   } catch (error) {
     console.error('Error deleting deployment:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get a deployment's workflow
+router.get('/:id/workflow', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || !req.user.id) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid deployment ID' });
+      return;
+    }
+
+    // Check if deployment exists
+    const deploymentResult = await pool.query(
+      'SELECT * FROM deployments WHERE id = $1',
+      [id]
+    );
+    
+    if (deploymentResult.rows.length === 0) {
+      res.status(404).json({ error: 'Deployment not found' });
+      return;
+    }
+
+    // Get workflow for deployment
+    const workflow = await WorkflowModel.getByDeploymentId(id);
+    
+    // If workflow doesn't exist, return empty elements array
+    if (!workflow) {
+      res.json({ elements: [] });
+      return;
+    }
+
+    res.json(workflow.workflow);
+  } catch (error) {
+    console.error('Error fetching workflow:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update a deployment's workflow
+router.put('/:id/workflow', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || !req.user.id) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid deployment ID' });
+      return;
+    }
+
+    // Check if deployment exists
+    const deploymentResult = await pool.query(
+      'SELECT * FROM deployments WHERE id = $1',
+      [id]
+    );
+    
+    if (deploymentResult.rows.length === 0) {
+      res.status(404).json({ error: 'Deployment not found' });
+      return;
+    }
+
+    // Validate that all nodes in the workflow have IDs
+    const { elements } = req.body;
+    
+    if (!elements || !Array.isArray(elements)) {
+      res.status(400).json({ error: 'Workflow elements must be an array' });
+      return;
+    }
+    
+    // Check if any node is missing an ID
+    if (!elements.every(node => node.id)) {
+      return res.status(400).json({ error: 'All nodes must have an id' });
+    }
+
+    // Save workflow using the model
+    await WorkflowModel.saveWorkflow(id, req.body);
+
+    res.json({ message: 'Workflow saved successfully' });
+  } catch (error) {
+    console.error('Error saving workflow:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

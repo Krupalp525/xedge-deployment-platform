@@ -3,8 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { UserModel } from './models/user.model';
 import { DeploymentModel } from './models/deployment.model';
+import { WorkflowModel } from './models/workflow.model';
 import authRoutes from './routes/auth.routes';
 import deploymentRoutes from './routes/deployment.routes';
+import pluginRoutes from './routes/plugin.routes';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +24,7 @@ const initDb = async () => {
   try {
     await UserModel.initTable();
     await DeploymentModel.initTable();
+    await WorkflowModel.initTable();
     console.log('Database tables initialized');
   } catch (error) {
     console.error('Error initializing database tables:', error);
@@ -32,6 +35,7 @@ const initDb = async () => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/deployments', deploymentRoutes);
+app.use('/api/plugins', pluginRoutes);
 
 // Default route
 app.get('/', (req, res) => {
