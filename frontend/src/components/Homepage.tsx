@@ -15,24 +15,14 @@ import {
   faUser,
   faProjectDiagram
 } from '@fortawesome/free-solid-svg-icons';
-import api from '../api';
+import { deploymentsApi, getApiMode } from '../api';
 import styles from './Homepage.module.css';
 import cardStyles from './DeploymentCard.module.css';
 import AddDeploymentModal from './AddDeploymentModal';
 import EditDeploymentModal from './EditDeploymentModal';
 import ApiModeToggle from './ApiModeToggle';
 import { useNavigate } from 'react-router-dom';
-
-interface Deployment {
-  id?: number;
-  name: string;
-  host: string;
-  port: string;
-  user_id?: number;
-  created_at?: string;
-  updated_at?: string;
-  owner_username?: string;
-}
+import { Deployment, DeploymentCreate, DeploymentUpdate } from '../types';
 
 const Homepage: React.FC = () => {
   const [userName, setUserName] = useState('Guest');
@@ -42,6 +32,7 @@ const Homepage: React.FC = () => {
   const [currentDeployment, setCurrentDeployment] = useState<Deployment | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [checkingConnections, setCheckingConnections] = useState<Record<number | string, boolean>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,20 +61,111 @@ const Homepage: React.FC = () => {
     fetchDeployments();
   }, []);
 
+  useEffect(() => {
+    // Fetch deployments on component mount
+    fetchDeployments();
+
+    // Add listener for API mode changes
+    const handleApiModeChange = () => {
+      fetchDeployments();
+    };
+    window.addEventListener('apiModeChanged', handleApiModeChange);
+
+    // Clean up on component unmount
+    return () => {
+      window.removeEventListener('apiModeChanged', handleApiModeChange);
+    };
+  }, []);
+
+  // Set up an interval to periodically check connection status in real API mode
+  useEffect(() => {
+    let connectionCheckInterval: NodeJS.Timeout | null = null;
+    
+    if (getApiMode() === 'real' && deployments.length > 0) {
+      connectionCheckInterval = setInterval(() => {
+        Promise.all(
+          deployments.map(async (deployment) => {
+            try {
+              const connectionResponse = await deploymentsApi.checkConnection(deployment);
+              return connectionResponse.data || deployment;
+            } catch (error) {
+              console.error(`Error checking connection for deployment ${deployment.name}:`, error);
+              return {
+                ...deployment,
+                connectionStatus: 'disconnected' as 'disconnected'
+              };
+            }
+          })
+        ).then(updatedDeployments => {
+          setDeployments(updatedDeployments);
+        });
+      }, 30000); // Check every 30 seconds
+    }
+
+    return () => {
+      if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+      }
+    };
+  }, [getApiMode(), deployments]);
+
   const fetchDeployments = async () => {
     try {
       setLoading(true);
-      const response = await api.deployments.getAll();
+      const response = await deploymentsApi.getAll();
+      
       // Check if the response has the expected structure
       if (response && response.data && Array.isArray(response.data)) {
-        setDeployments(response.data);
+        const deploymentsList = response.data;
+        
+        // First set the deployments without connection status to render quickly
+        setDeployments(deploymentsList);
+        setLoading(false);
+        
+        // If real API mode is enabled, check the connection status for each deployment asynchronously
+        if (getApiMode() === 'real') {
+          // Create a tracking object for which deployments we're checking
+          const checking: Record<number | string, boolean> = {};
+          deploymentsList.forEach(d => {
+            checking[d.id || ''] = true;
+          });
+          setCheckingConnections(checking);
+          
+          // Check connections in parallel but handle updates individually
+          deploymentsList.forEach(async (deployment) => {
+            try {
+              const connectionResponse = await deploymentsApi.checkConnection(deployment);
+              if (connectionResponse.data) {
+                // Update just this one deployment in the state
+                setDeployments(currentDeployments => {
+                  return currentDeployments.map(d => {
+                    // Make sure we're returning a valid Deployment
+                    return d.id === deployment.id && connectionResponse.data 
+                      ? connectionResponse.data 
+                      : d;
+                  });
+                });
+              }
+            } catch (error) {
+              console.error(`Error checking connection for deployment ${deployment.name}:`, error);
+            } finally {
+              // Mark this deployment as done checking
+              setCheckingConnections(current => ({
+                ...current,
+                [deployment.id || '']: false
+              }));
+            }
+          });
+        }
       } else if (Array.isArray(response)) {
         // For backward compatibility, handle direct array response
         setDeployments(response);
+        setLoading(false);
       } else {
         // Fallback for unexpected response format
         console.error('Unexpected deployments response format:', response);
         setDeployments([]);
+        setLoading(false);
       }
     } catch (error: any) {
       console.error('Error fetching deployments:', error);
@@ -95,14 +177,13 @@ const Homepage: React.FC = () => {
       
       // Display an empty array to prevent showing stale data
       setDeployments([]);
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleAddDeployment = async (deployment: Deployment) => {
+  const handleAddDeployment = async (deployment: DeploymentCreate) => {
     try {
-      const response = await api.deployments.create(deployment);
+      const response = await deploymentsApi.create(deployment);
       if (response.success && response.data) {
         setDeployments([...deployments, response.data]);
       } else {
@@ -120,15 +201,11 @@ const Homepage: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateDeployment = async (updatedDeployment: Deployment) => {
+  const handleUpdateDeployment = async (updatedDeployment: DeploymentUpdate) => {
     try {
       if (!updatedDeployment.id) return;
       
-      const response = await api.deployments.update(updatedDeployment.id, {
-        name: updatedDeployment.name,
-        host: updatedDeployment.host,
-        port: updatedDeployment.port
-      });
+      const response = await deploymentsApi.update(updatedDeployment.id, updatedDeployment);
       
       // Update the deployments state
       if (response.success && response.data) {
@@ -148,7 +225,7 @@ const Homepage: React.FC = () => {
     
     if (window.confirm('Are you sure you want to delete this deployment?')) {
       try {
-        const response = await api.deployments.delete(id);
+        const response = await deploymentsApi.delete(id);
         if (response.success) {
           setDeployments(deployments.filter(deployment => deployment.id !== id));
         } else {
@@ -169,6 +246,53 @@ const Homepage: React.FC = () => {
     
     // Redirect to login page
     navigate('/login');
+  };
+
+  // Function to get the appropriate status style based on connection status
+  const getStatusStyle = (deployment: Deployment) => {
+    const deploymentId = deployment.id || '';
+    const isChecking = checkingConnections[deploymentId];
+    
+    if (getApiMode() === 'real') {
+      // If we're checking the connection, show a loading state
+      if (isChecking) {
+        return cardStyles.statusChecking;
+      }
+      
+      // Otherwise, show the actual connection status
+      return deployment.connectionStatus === 'connected'
+        ? cardStyles.statusConnected
+        : deployment.connectionStatus === 'disconnected'
+          ? cardStyles.statusDisconnected
+          : cardStyles.statusUnknown;
+    } else {
+      // In mock mode, always show the status as connected
+      return cardStyles.statusConnected;
+    }
+  };
+
+  // Function to get status tooltip text
+  const getStatusTooltip = (deployment: Deployment) => {
+    const deploymentId = deployment.id || '';
+    const isChecking = checkingConnections[deploymentId];
+    
+    if (getApiMode() === 'real') {
+      if (isChecking) {
+        return `Checking connection to Fledge server at ${deployment.host}:${deployment.port}...`;
+      }
+      
+      return deployment.connectionStatus === 'connected'
+        ? `Connected to Fledge server at ${deployment.host}:${deployment.port}`
+        : deployment.connectionStatus === 'disconnected'
+          ? `Cannot connect to Fledge server at ${deployment.host}:${deployment.port}. Possible issues: 
+          1. Server not running 
+          2. Incorrect host/port 
+          3. CORS policy blocking request
+          4. Different endpoint format`
+          : `Connection status unknown for ${deployment.host}:${deployment.port}`;
+    } else {
+      return 'Connection status not checked in mock mode';
+    }
   };
 
   return (
@@ -281,7 +405,10 @@ const Homepage: React.FC = () => {
                 <div key={deployment.id || deployment.name} className={cardStyles.card}>
                   <div className={cardStyles.cardHeader}>
                     <h3 className={cardStyles.title}>{deployment.name}</h3>
-                    <div className={cardStyles.status}></div>
+                    <div 
+                      className={`${cardStyles.status} ${getStatusStyle(deployment)}`}
+                      title={getStatusTooltip(deployment)}
+                    ></div>
                   </div>
                   <div className={cardStyles.info}>
                     <span className={cardStyles.label}>Host</span>

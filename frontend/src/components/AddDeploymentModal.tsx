@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import styles from './AddDeploymentModal.module.css';
-
-interface DeploymentFormData {
-  name: string;
-  host: string;
-  port: string;
-}
+import { Deployment, DeploymentCreate } from '../types';
 
 interface AddDeploymentModalProps {
   onClose: () => void;
-  onAdd: (deployment: DeploymentFormData) => void;
+  onAdd: (deployment: DeploymentCreate) => void;
 }
 
 const AddDeploymentModal: React.FC<AddDeploymentModalProps> = ({ onClose, onAdd }) => {
-  const [formData, setFormData] = useState<DeploymentFormData>({
+  const [formData, setFormData] = useState<DeploymentCreate>({
     name: '',
     host: '',
     port: ''
@@ -21,10 +16,25 @@ const AddDeploymentModal: React.FC<AddDeploymentModalProps> = ({ onClose, onAdd 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Special handling for port field to ensure it's a valid port number
+    if (name === 'port') {
+      // Remove any non-numeric characters
+      const numericValue = value.replace(/[^0-9]/g, '');
+      
+      // Ensure port is within valid range (1-65535)
+      if (numericValue === '' || (parseInt(numericValue, 10) >= 1 && parseInt(numericValue, 10) <= 65535)) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: numericValue
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

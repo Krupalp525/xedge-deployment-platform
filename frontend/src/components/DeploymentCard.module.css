@@ -49,8 +49,6 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #4CAF50;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
   position: relative;
 }
 
@@ -60,10 +58,59 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: rgba(76, 175, 80, 0.15);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+/* Status colors */
+.statusConnected {
+  background-color: #4CAF50; /* Green */
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+}
+
+.statusConnected::after {
+  background-color: rgba(76, 175, 80, 0.15);
+}
+
+.statusDisconnected {
+  background-color: #f44336; /* Red */
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.4);
+}
+
+.statusDisconnected::after {
+  background-color: rgba(244, 67, 54, 0.15);
+}
+
+.statusUnknown {
+  background-color: #FFC107; /* Yellow */
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.4);
+}
+
+.statusUnknown::after {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+.statusChecking {
+  background-color: #2196F3; /* Blue */
+  box-shadow: 0 0 10px rgba(33, 150, 243, 0.4);
+  animation: pulse 1.5s infinite;
+}
+
+.statusChecking::after {
+  background-color: rgba(33, 150, 243, 0.15);
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
 }
 
 .info {

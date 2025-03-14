@@ -1,3 +1,6 @@
+// Re-export all API types from the api.ts file
+export * from './types/api';
+
 // Plugin types
 export interface PluginSetting {
   key: string;
@@ -11,7 +14,7 @@ export interface Plugin {
   category: string;
   description: string;
   type: string;
-  settings: {
+  settings?: {
     basic: PluginSetting[];
   };
 }
@@ -45,7 +48,14 @@ export interface Deployment {
   created_at: string;
   updated_at: string;
   owner_username: string;
+  connectionStatus?: 'connected' | 'disconnected' | 'unknown';
 }
+
+// Helper type for creating new deployments
+export type DeploymentCreate = Pick<Deployment, 'name' | 'host' | 'port'>;
+
+// Helper type for updating existing deployments
+export type DeploymentUpdate = Partial<Deployment> & { id: number };
 
 // User types
 export interface User {

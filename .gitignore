@@ -2,12 +2,15 @@
 node_modules/
 /.pnp
 .pnp.js
+**/node_modules/
 
 # Production build files
 /frontend/build/
 /backend/dist/
 /build
 /dist
+**/build/
+**/dist/
 
 # Environment variables
 .env
@@ -17,6 +20,7 @@ node_modules/
 .env.production.local
 .env.production
 backend/.env
+**/.env
 
 # Logs
 logs
@@ -24,6 +28,7 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 
 # Editor directories and files
 .idea/
@@ -31,11 +36,14 @@ yarn-error.log*
 *.swp
 *.swo
 .DS_Store
+.cursor/
+**/.cursor/
 
 # Misc
 coverage/
 .tmp/
 .temp/
+.github/.temp/
 
 # Cache
 .eslintcache
@@ -43,4 +51,15 @@ coverage/
 
 # Debug
 .nyc_output/
-debug/ 
+debug/
+
+# TypeScript
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Testing
+/coverage
+**/coverage
+
+# Local Netlify folder
+.netlify 

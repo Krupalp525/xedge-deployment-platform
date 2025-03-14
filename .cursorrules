@@ -1,0 +1,61 @@
+# Overall Cursor AI Rule for Creating a Highly Valued Frontend for Fledge
+
+When generating code for the Fledge frontend, Cursor AI must adhere to the following guidelines:
+
+1. Framework:
+   Use React as the primary frontend framework due to its flexibility, performance, and extensive ecosystem, making it ideal for building dynamic and scalable interfaces.
+
+2. UI Design:
+   Create a clean, professional, and modular user interface with distinct sections for:
+   - Data visualization
+   - Device management
+   - System configuration
+   The design should prioritize usability and clarity, tailored to industrial users who need quick access to critical information.
+
+3. Data Visualization:
+   Implement robust data visualization components capable of handling time-series data, using libraries like Chart.js or D3.js to display real-time and historical data effectively.
+
+4. Real-Time Updates:
+   Enable real-time data updates using WebSockets or Socket.io to ensure the interface reflects the latest information from Fledge without manual refreshes.
+
+5. State Management:
+   Utilize Redux for managing complex state and data flows, ensuring scalability and maintainability as the application handles intricate industrial datasets.
+
+6. Authentication:
+   Integrate securely with Fledge’s authentication system, using JWT or OAuth, and manage user sessions appropriately to protect sensitive industrial data.
+
+7. Data Source Configuration:
+   Provide user-friendly interfaces for configuring various data sources, such as MQTT brokers or OPC UA servers, enabling users to easily manage connections to industrial devices.
+
+8. Alerts and Notifications:
+   Allow users to set up alerts and notifications based on specific data conditions or thresholds, supporting proactive monitoring and response to critical events.
+
+9. Role-Based Access Control:
+   Implement role-based access control (RBAC) to manage user permissions, ensuring that different users have appropriate access levels based on their roles within the industrial environment.
+
+10. Internationalization:
+    Ensure the frontend supports multiple languages through internationalization techniques, making it accessible to a global user base.
+
+11. Error Handling:
+    Handle errors gracefully by providing clear feedback to users and logging errors for debugging, maintaining a smooth experience even during issues like network failures or API errors.
+
+12. Performance Optimization:
+    Optimize performance using techniques such as lazy loading, code splitting, and efficient data fetching strategies to handle large datasets and ensure responsiveness.
+
+13. Accessibility:
+    Follow WCAG (Web Content Accessibility Guidelines) to make the interface accessible to users with disabilities, incorporating proper contrast ratios, keyboard navigation, and screen reader support.
+
+14. Testing:
+    Write comprehensive unit and integration tests to ensure the reliability of components and critical workflows, maintaining the stability of the frontend.
+
+15. Deployment:
+    Design the frontend to be easily containerized (e.g., with Docker) for seamless deployment alongside Fledge, aligning with modern deployment practices in industrial settings.
+
+16. Documentation:
+    Include inline code documentation and provide a help section or user guide within the frontend to assist users in navigating and utilizing the interface effectively.
+
+17. Open-Source Alignment:
+    Use open-source libraries and tools to maintain consistency with Fledge’s open-source ethos, avoiding proprietary solutions where possible.
+
+18. User Experience:
+    Prioritize an intuitive user experience with clear navigation and consider implementing drag-and-drop functionality for enhanced usability in configuring dashboards or workflows.
